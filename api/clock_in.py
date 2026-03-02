@@ -35,15 +35,21 @@ class handler(BaseHTTPRequestHandler):
 
             db = get_db()
 
+            MAX_CLOCK_IN = 2
+
             existing = list(
                 db.collection("attendance")
                 .where("employee_id", "==", uid)
                 .where("date", "==", today)
-                .limit(1)
                 .stream()
             )
-            if existing:
-                return send_error(self, 409, "今日已打卡上班")
+
+            if len(existing) >= MAX_CLOCK_IN:
+                return send_error(self, 409, f"今日已達打卡上限（{MAX_CLOCK_IN} 次）")
+
+            unclosed = [d for d in existing if not d.to_dict().get("clock_out")]
+            if unclosed:
+                return send_error(self, 409, "請先打卡下班，再打卡上班")
 
             record = {
                 "employee_id": uid,

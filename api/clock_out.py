@@ -39,17 +39,18 @@ class handler(BaseHTTPRequestHandler):
                 db.collection("attendance")
                 .where("employee_id", "==", uid)
                 .where("date", "==", today)
-                .limit(1)
                 .stream()
             )
 
             if not docs:
                 return send_error(self, 404, "今日尚未打卡上班，無法打卡下班")
 
-            doc = docs[0]
+            unclosed = [d for d in docs if not d.to_dict().get("clock_out")]
+            if not unclosed:
+                return send_error(self, 409, "今日所有班次皆已打卡下班")
+
+            doc = unclosed[-1]
             data = doc.to_dict()
-            if data.get("clock_out"):
-                return send_error(self, 409, "今日已打卡下班")
 
             doc.reference.update({
                 "clock_out": now.isoformat(),

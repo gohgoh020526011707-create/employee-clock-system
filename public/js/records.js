@@ -49,6 +49,7 @@ const Records = (() => {
   function renderTodayStatus(container, records) {
     const btnIn = document.getElementById("btn-clock-in");
     const btnOut = document.getElementById("btn-clock-out");
+    const MAX_CLOCK_IN = 2;
 
     if (records.length === 0) {
       container.innerHTML = '<p class="text-muted">今日尚未打卡</p>';
@@ -57,31 +58,42 @@ const Records = (() => {
       return;
     }
 
-    const r = records[0];
-    const dur = calcDuration(r.clock_in, r.clock_out);
-    const pay = calcPay(dur.hours, _profile);
-    const payHtml = pay ? `
-      <div class="status-item">
-        <span class="status-label">今日薪資</span>
-        <span class="status-value" style="color:var(--color-success);font-size:1.25rem;">${pay}</span>
+    const sorted = [...records].sort((a, b) => new Date(a.clock_in) - new Date(b.clock_in));
+    let totalPayHours = 0;
+
+    const shiftsHtml = sorted.map((r, i) => {
+      const dur = calcDuration(r.clock_in, r.clock_out);
+      totalPayHours += dur.hours;
+      return `
+        <div style="margin-bottom:0.75rem;">
+          <div style="font-size:0.8125rem;color:var(--color-gray-400);margin-bottom:0.375rem;">第 ${i + 1} 班</div>
+          <div class="status-grid">
+            <div class="status-item">
+              <span class="status-label">上班打卡</span>
+              <span class="status-value status-value--in">${Utils.formatTime(r.clock_in)}</span>
+            </div>
+            <div class="status-item">
+              <span class="status-label">下班打卡</span>
+              <span class="status-value status-value--out">${Utils.formatTime(r.clock_out)}</span>
+            </div>
+          </div>
+        </div>`;
+    }).join("");
+
+    const totalPay = calcPay(totalPayHours, _profile);
+    const payHtml = totalPay ? `
+      <div class="status-item" style="margin-top:0.5rem;">
+        <span class="status-label">今日薪資合計</span>
+        <span class="status-value" style="color:var(--color-success);font-size:1.25rem;">${totalPay}</span>
       </div>` : "";
 
-    container.innerHTML = `
-      <div class="status-grid" style="grid-template-columns:${pay ? "1fr 1fr 1fr" : "1fr 1fr"};">
-        <div class="status-item">
-          <span class="status-label">上班打卡</span>
-          <span class="status-value status-value--in">${Utils.formatTime(r.clock_in)}</span>
-        </div>
-        <div class="status-item">
-          <span class="status-label">下班打卡</span>
-          <span class="status-value status-value--out">${Utils.formatTime(r.clock_out)}</span>
-        </div>
-        ${payHtml}
-      </div>
-    `;
+    container.innerHTML = shiftsHtml + payHtml;
 
-    if (btnIn) btnIn.disabled = true;
-    if (btnOut) btnOut.disabled = !!r.clock_out;
+    const hasUnclosed = sorted.some((r) => !r.clock_out);
+    const reachedMax = sorted.length >= MAX_CLOCK_IN;
+
+    if (btnIn) btnIn.disabled = hasUnclosed || reachedMax;
+    if (btnOut) btnOut.disabled = !hasUnclosed;
   }
 
   async function loadHistory() {
