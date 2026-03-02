@@ -1,0 +1,6 @@
+{
+  "name": "employee-clock-system",
+  "version": "1.0.0",
+  "private": true,
+  "description": "員工打卡系統 - WiFi IP 驗證防偽打卡"
+}
