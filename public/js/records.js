@@ -68,6 +68,16 @@ const Records = (() => {
     }
   }
 
+  function calcDuration(clockIn, clockOut) {
+    if (!clockIn || !clockOut) return "--";
+    const ms = new Date(clockOut) - new Date(clockIn);
+    if (ms < 0) return "--";
+    const totalMin = Math.floor(ms / 60000);
+    const hours = Math.floor(totalMin / 60);
+    const mins = totalMin % 60;
+    return `${hours} 小時 ${mins} 分鐘`;
+  }
+
   function renderHistoryTable(tbody, records) {
     if (records.length === 0) {
       tbody.innerHTML =
@@ -82,7 +92,7 @@ const Records = (() => {
         <td>${r.date}</td>
         <td>${Utils.formatTime(r.clock_in)}</td>
         <td>${Utils.formatTime(r.clock_out)}</td>
-        <td><code>${r.ip || "--"}</code></td>
+        <td>${calcDuration(r.clock_in, r.clock_out)}</td>
       </tr>
     `
       )
