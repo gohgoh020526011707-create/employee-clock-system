@@ -16,12 +16,12 @@
 
       <form id="login-form">
         <div class="form-group">
-          <label for="email">電子郵件</label>
+          <label for="username">姓名</label>
           <input
-            type="email"
-            id="email"
+            type="text"
+            id="username"
             class="form-control"
-            placeholder="name@company.com"
+            placeholder="請輸入姓名"
             required
           />
         </div>
@@ -63,17 +63,17 @@
       Utils.setLoading(btn, true);
       errorEl.classList.remove("error-msg--visible");
 
-      const email = document.getElementById("email").value.trim();
+      const username = document.getElementById("username").value.trim();
       const password = document.getElementById("password").value;
+      const email = username.includes("@") ? username : username + "@clock.internal";
 
       try {
         await Auth.login(email, password);
       } catch (err) {
         let msg = "登入失敗";
-        if (err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
-          msg = "帳號或密碼錯誤";
-        } else if (err.code === "auth/invalid-email") {
-          msg = "電子郵件格式不正確";
+        if (err.code === "auth/user-not-found" || err.code === "auth/wrong-password"
+            || err.code === "auth/invalid-credential") {
+          msg = "姓名或密碼錯誤";
         } else if (err.code === "auth/too-many-requests") {
           msg = "嘗試次數過多，請稍後再試";
         }

@@ -32,7 +32,7 @@ const Admin = (() => {
 
   function renderEmployeeTable(tbody, employees) {
     if (employees.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">尚無員工</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">尚無員工</td></tr>';
       return;
     }
 
@@ -41,9 +41,6 @@ const Admin = (() => {
         (e) => `
       <tr>
         <td>${e.name}</td>
-        <td>${e.email}</td>
-        <td>${e.department || "--"}</td>
-        <td><span class="badge badge--${e.role}">${e.role === "admin" ? "管理員" : "員工"}</span></td>
         <td>${salaryTypeLabel(e.salary_type)}</td>
         <td>${salaryDisplay(e)}</td>
         <td>
@@ -58,12 +55,13 @@ const Admin = (() => {
   async function addEmployee(form) {
     const formData = new FormData(form);
     const salaryType = formData.get("salary_type");
+    const name = formData.get("name");
     const body = {
-      email: formData.get("email"),
+      email: name + "@clock.internal",
       password: formData.get("password"),
-      name: formData.get("name"),
-      department: formData.get("department"),
-      role: formData.get("role"),
+      name: name,
+      department: "",
+      role: "employee",
       salary_type: salaryType,
       monthly_salary: salaryType === "full_time" ? Number(formData.get("monthly_salary")) || 0 : 0,
       hourly_rate: salaryType === "part_time" ? Number(formData.get("hourly_rate")) || 0 : 0,
@@ -386,7 +384,7 @@ const Admin = (() => {
         if (!select) continue;
         select.innerHTML =
           '<option value="">-- 請選擇員工 --</option>' +
-          _employees.map((e) => `<option value="${e.uid}">${e.name} (${e.email})</option>`).join("");
+          _employees.map((e) => `<option value="${e.uid}">${e.name}</option>`).join("");
       }
     } catch {
       for (const id of selects) {
