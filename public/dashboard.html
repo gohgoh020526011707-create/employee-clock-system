@@ -24,6 +24,20 @@
       <div class="live-clock__date" id="live-date"></div>
     </div>
 
+    <!-- 薪資資訊 -->
+    <div class="card" id="salary-info" style="display:none;">
+      <div class="status-grid">
+        <div class="status-item">
+          <span class="status-label">薪資類型</span>
+          <span class="status-value" id="my-salary-type" style="font-size:1.125rem;">--</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">薪資</span>
+          <span class="status-value" id="my-salary" style="font-size:1.125rem; color:var(--color-primary);">--</span>
+        </div>
+      </div>
+    </div>
+
     <!-- 打卡按鈕 -->
     <div class="clock-actions">
       <button
@@ -126,6 +140,22 @@
 
       document.getElementById("user-name").textContent = user.displayName || user.email;
       await Records.loadToday();
+
+      try {
+        const profileData = await Utils.apiRequest("/my_profile");
+        const p = profileData.profile;
+        const salaryCard = document.getElementById("salary-info");
+        const typeEl = document.getElementById("my-salary-type");
+        const salaryEl = document.getElementById("my-salary");
+
+        typeEl.textContent = p.salary_type === "part_time" ? "工讀生（時薪）" : "正職（月薪）";
+        if (p.salary_type === "part_time") {
+          salaryEl.textContent = "$" + Number(p.hourly_rate || 0).toLocaleString() + " / 時";
+        } else {
+          salaryEl.textContent = "$" + Number(p.monthly_salary || 0).toLocaleString() + " / 月";
+        }
+        salaryCard.style.display = "";
+      } catch {}
     });
   </script>
 </body>
