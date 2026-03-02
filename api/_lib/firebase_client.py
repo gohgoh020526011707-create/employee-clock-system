@@ -47,6 +47,11 @@ def create_user(email, password, display_name):
     )
 
 
+def update_user(uid, **kwargs):
+    _ensure_initialized()
+    return fb_auth.update_user(uid, **kwargs)
+
+
 def delete_user(uid):
     _ensure_initialized()
     fb_auth.delete_user(uid)
