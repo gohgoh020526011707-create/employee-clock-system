@@ -496,6 +496,30 @@ code {
   display: block;
 }
 
+/* ===== Modal 彈窗 ===== */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.modal__content {
+  position: relative;
+  z-index: 1;
+  width: 90%;
+  max-width: 480px;
+  margin: 0;
+}
+
 /* ===== 響應式 ===== */
 @media (max-width: 640px) {
   .container {

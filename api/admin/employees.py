@@ -2,6 +2,7 @@
 
 GET  - 取得所有員工列表
 POST - 新增員工
+PUT  - 更新員工資料（薪資等）
 DELETE - 刪除員工（查詢參數 uid）
 """
 
@@ -79,17 +80,58 @@ class handler(BaseHTTPRequestHandler):
 
             db = get_db()
             now = datetime.now(TZ).isoformat()
+            salary_type = body.get("salary_type", "full_time")
+            monthly_salary = body.get("monthly_salary", 0)
+            hourly_rate = body.get("hourly_rate", 0)
+
             employee_data = {
                 "name": name,
                 "email": email,
                 "department": department,
                 "role": role,
+                "salary_type": salary_type,
+                "monthly_salary": monthly_salary,
+                "hourly_rate": hourly_rate,
                 "created_at": now,
             }
             db.collection("employees").document(user_record.uid).set(employee_data)
 
             employee_data["uid"] = user_record.uid
             send_json(self, 201, {"message": "員工新增成功", "employee": employee_data})
+        except Exception as e:
+            return send_error(self, 500, f"伺服器錯誤：{str(e)}")
+
+    def do_PUT(self):
+        try:
+            decoded = self._require_admin()
+            if not decoded:
+                return
+
+            length = int(self.headers.get("Content-Length", 0))
+            body = json.loads(self.rfile.read(length)) if length else {}
+
+            target_uid = body.get("uid")
+            if not target_uid:
+                return send_error(self, 400, "缺少 uid")
+
+            db = get_db()
+            doc_ref = db.collection("employees").document(target_uid)
+            doc = doc_ref.get()
+            if not doc.exists:
+                return send_error(self, 404, "找不到此員工")
+
+            update_data = {}
+            for field in ["name", "department", "salary_type", "monthly_salary", "hourly_rate"]:
+                if field in body:
+                    update_data[field] = body[field]
+
+            if not update_data:
+                return send_error(self, 400, "未提供要更新的欄位")
+
+            doc_ref.update(update_data)
+            updated = doc_ref.get().to_dict()
+            updated["uid"] = target_uid
+            send_json(self, 200, {"message": "員工資料已更新", "employee": updated})
         except Exception as e:
             return send_error(self, 500, f"伺服器錯誤：{str(e)}")
 

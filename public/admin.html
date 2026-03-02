@@ -21,8 +21,10 @@
     <!-- Tab 導覽 -->
     <div class="tabs" id="admin-tabs">
       <button class="tab tab--active" data-tab="employees">員工管理</button>
-      <button class="tab" data-tab="ip-settings">IP 白名單</button>
+      <button class="tab" data-tab="salary">薪資設定</button>
       <button class="tab" data-tab="records">出勤查詢</button>
+      <button class="tab" data-tab="payroll">薪資報表</button>
+      <button class="tab" data-tab="ip-settings">IP 白名單</button>
     </div>
 
     <!-- Tab: 員工管理 -->
@@ -54,6 +56,21 @@
                 <option value="admin">管理員</option>
               </select>
             </div>
+            <div class="form-group">
+              <label for="emp-salary-type">薪資類型</label>
+              <select id="emp-salary-type" name="salary_type" class="form-control" onchange="Admin.toggleSalaryFields()">
+                <option value="full_time">正職（月薪）</option>
+                <option value="part_time">工讀生（時薪）</option>
+              </select>
+            </div>
+            <div class="form-group" id="monthly-salary-group">
+              <label for="emp-monthly-salary">月薪（元）</label>
+              <input type="number" id="emp-monthly-salary" name="monthly_salary" class="form-control" min="0" value="0" />
+            </div>
+            <div class="form-group" id="hourly-rate-group" style="display:none;">
+              <label for="emp-hourly-rate">時薪（元）</label>
+              <input type="number" id="emp-hourly-rate" name="hourly_rate" class="form-control" min="0" value="0" />
+            </div>
           </div>
           <div style="margin-top:1rem;">
             <button type="submit" class="btn btn--primary">新增員工</button>
@@ -71,11 +88,120 @@
                 <th>電子郵件</th>
                 <th>部門</th>
                 <th>角色</th>
+                <th>薪資類型</th>
+                <th>薪資</th>
                 <th>操作</th>
               </tr>
             </thead>
             <tbody id="employees-tbody">
-              <tr><td colspan="5" class="text-center text-muted">載入中...</td></tr>
+              <tr><td colspan="7" class="text-center text-muted">載入中...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: 薪資設定 -->
+    <div id="panel-salary" class="tab-panel">
+      <div class="card">
+        <h2 class="card__title">員工薪資設定</h2>
+        <p style="margin-bottom:1rem; color:var(--color-gray-500); font-size:0.875rem;">
+          選擇員工後可修改其薪資類型與金額。
+        </p>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+          <div class="form-group">
+            <label for="salary-employee">選擇員工</label>
+            <select id="salary-employee" class="form-control" onchange="Admin.loadEmployeeSalary()">
+              <option value="">-- 請選擇員工 --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="salary-type">薪資類型</label>
+            <select id="salary-type" class="form-control" onchange="Admin.toggleSalaryEditFields()">
+              <option value="full_time">正職（月薪）</option>
+              <option value="part_time">工讀生（時薪）</option>
+            </select>
+          </div>
+          <div class="form-group" id="edit-monthly-group">
+            <label for="salary-monthly">月薪（元）</label>
+            <input type="number" id="salary-monthly" class="form-control" min="0" value="0" />
+          </div>
+          <div class="form-group" id="edit-hourly-group" style="display:none;">
+            <label for="salary-hourly">時薪（元）</label>
+            <input type="number" id="salary-hourly" class="form-control" min="0" value="0" />
+          </div>
+        </div>
+        <div style="margin-top:1rem;">
+          <button class="btn btn--primary" onclick="Admin.saveSalary()">儲存薪資設定</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: 出勤查詢 -->
+    <div id="panel-records" class="tab-panel">
+      <div class="card">
+        <h2 class="card__title">員工出勤紀錄查詢與修改</h2>
+        <div class="filter-bar">
+          <div class="form-group">
+            <label for="query-employee">選擇員工</label>
+            <select id="query-employee" class="form-control">
+              <option value="">載入中...</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="query-start">開始日期</label>
+            <input type="date" id="query-start" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label for="query-end">結束日期</label>
+            <input type="date" id="query-end" class="form-control" />
+          </div>
+          <button class="btn btn--primary" onclick="Admin.queryEmployeeRecords()">查詢</button>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>日期</th>
+                <th>上班時間</th>
+                <th>下班時間</th>
+                <th>工作時長</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="admin-records-tbody">
+              <tr><td colspan="5" class="text-center text-muted">請選擇員工後查詢</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: 薪資報表 -->
+    <div id="panel-payroll" class="tab-panel">
+      <div class="card">
+        <h2 class="card__title">薪資報表</h2>
+        <div class="filter-bar">
+          <div class="form-group">
+            <label for="payroll-month">選擇月份</label>
+            <input type="month" id="payroll-month" class="form-control" />
+          </div>
+          <button class="btn btn--primary" onclick="Admin.generatePayroll()">產生報表</button>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>姓名</th>
+                <th>薪資類型</th>
+                <th>出勤天數</th>
+                <th>總工作時數</th>
+                <th>薪資基準</th>
+                <th>應發薪資</th>
+              </tr>
+            </thead>
+            <tbody id="payroll-tbody">
+              <tr><td colspan="6" class="text-center text-muted">請選擇月份後產生報表</td></tr>
             </tbody>
           </table>
         </div>
@@ -104,43 +230,25 @@
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Tab: 出勤查詢 -->
-    <div id="panel-records" class="tab-panel">
-      <div class="card">
-        <h2 class="card__title">員工出勤紀錄查詢</h2>
-        <div class="filter-bar">
-          <div class="form-group">
-            <label for="query-employee">選擇員工</label>
-            <select id="query-employee" class="form-control">
-              <option value="">載入中...</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="query-start">開始日期</label>
-            <input type="date" id="query-start" class="form-control" />
-          </div>
-          <div class="form-group">
-            <label for="query-end">結束日期</label>
-            <input type="date" id="query-end" class="form-control" />
-          </div>
-          <button class="btn btn--primary" onclick="Admin.queryEmployeeRecords()">查詢</button>
-        </div>
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>日期</th>
-                <th>上班時間</th>
-                <th>下班時間</th>
-                <th>IP 位址</th>
-              </tr>
-            </thead>
-            <tbody id="admin-records-tbody">
-              <tr><td colspan="4" class="text-center text-muted">請選擇員工後查詢</td></tr>
-            </tbody>
-          </table>
-        </div>
+  <!-- 修改時間彈窗 -->
+  <div id="edit-modal" class="modal" style="display:none;">
+    <div class="modal__overlay" onclick="Admin.closeEditModal()"></div>
+    <div class="modal__content card">
+      <h2 class="card__title">修改打卡時間</h2>
+      <input type="hidden" id="edit-record-id" />
+      <div class="form-group">
+        <label for="edit-clock-in">上班時間</label>
+        <input type="datetime-local" id="edit-clock-in" class="form-control" />
+      </div>
+      <div class="form-group">
+        <label for="edit-clock-out">下班時間</label>
+        <input type="datetime-local" id="edit-clock-out" class="form-control" />
+      </div>
+      <div class="btn-group" style="margin-top:1rem;">
+        <button class="btn btn--primary" onclick="Admin.saveRecordEdit()">儲存</button>
+        <button class="btn btn--outline" onclick="Admin.closeEditModal()">取消</button>
       </div>
     </div>
   </div>
@@ -170,6 +278,11 @@
       Admin.addEmployee(e.target);
     });
 
+    /* 設定預設月份為當月 */
+    const now = new Date();
+    document.getElementById("payroll-month").value =
+      now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
+
     /* 認證檢查 & 初始化 */
     Auth.onAuthStateChanged(async (user) => {
       if (!user) {
@@ -182,7 +295,7 @@
       try {
         await Admin.loadEmployees();
         await Admin.loadIPSettings();
-        await Admin.populateEmployeeSelect();
+        await Admin.populateAllSelects();
       } catch (err) {
         Utils.showToast("權限不足或載入失敗", "error");
         setTimeout(() => (window.location.href = "/dashboard.html"), 1500);
