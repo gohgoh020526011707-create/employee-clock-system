@@ -5,11 +5,12 @@ from .firebase_client import get_db
 
 def get_client_ip(headers):
     """從請求標頭中取得客戶端真實 IP"""
-    forwarded = headers.get("x-forwarded-for", "")
+    lower_headers = {k.lower(): v for k, v in headers.items()}
+    forwarded = lower_headers.get("x-forwarded-for", "")
     if forwarded:
         return forwarded.split(",")[0].strip()
 
-    real_ip = headers.get("x-real-ip", "")
+    real_ip = lower_headers.get("x-real-ip", "")
     if real_ip:
         return real_ip.strip()
 

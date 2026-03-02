@@ -5,7 +5,8 @@ from .firebase_client import verify_id_token, get_db
 
 def authenticate(headers):
     """驗證 Bearer token，回傳 (decoded_token, error_message)"""
-    auth_header = headers.get("Authorization", "")
+    lower_headers = {k.lower(): v for k, v in headers.items()}
+    auth_header = lower_headers.get("authorization", "")
     if not auth_header.startswith("Bearer "):
         return None, "未提供認證令牌"
 
