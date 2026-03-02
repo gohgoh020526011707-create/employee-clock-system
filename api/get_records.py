@@ -23,37 +23,40 @@ class handler(BaseHTTPRequestHandler):
         handle_cors_preflight(self)
 
     def do_GET(self):
-        decoded, err = authenticate(dict(self.headers))
-        if err:
-            return send_error(self, 401, err)
+        try:
+            decoded, err = authenticate(dict(self.headers))
+            if err:
+                return send_error(self, 401, err)
 
-        uid = decoded["uid"]
-        params = parse_qs(urlparse(self.path).query)
+            uid = decoded["uid"]
+            params = parse_qs(urlparse(self.path).query)
 
-        start = params.get("start", [None])[0]
-        end = params.get("end", [None])[0]
-        target_uid = params.get("employee_id", [None])[0]
+            start = params.get("start", [None])[0]
+            end = params.get("end", [None])[0]
+            target_uid = params.get("employee_id", [None])[0]
 
-        if target_uid and target_uid != uid:
-            if not is_admin(uid):
-                return send_error(self, 403, "僅管理員可查詢其他員工紀錄")
-            uid = target_uid
+            if target_uid and target_uid != uid:
+                if not is_admin(uid):
+                    return send_error(self, 403, "僅管理員可查詢其他員工紀錄")
+                uid = target_uid
 
-        db = get_db()
-        query = db.collection("attendance").where("employee_id", "==", uid)
+            db = get_db()
+            query = db.collection("attendance").where("employee_id", "==", uid)
 
-        if start:
-            query = query.where("date", ">=", start)
-        if end:
-            query = query.where("date", "<=", end)
+            if start:
+                query = query.where("date", ">=", start)
+            if end:
+                query = query.where("date", "<=", end)
 
-        query = query.order_by("date", direction="DESCENDING")
-        docs = list(query.stream())
+            query = query.order_by("date", direction="DESCENDING")
+            docs = list(query.stream())
 
-        records = []
-        for doc in docs:
-            data = doc.to_dict()
-            data["id"] = doc.id
-            records.append(data)
+            records = []
+            for doc in docs:
+                data = doc.to_dict()
+                data["id"] = doc.id
+                records.append(data)
 
-        send_json(self, 200, {"records": records, "count": len(records)})
+            send_json(self, 200, {"records": records, "count": len(records)})
+        except Exception as e:
+            return send_error(self, 500, f"伺服器錯誤：{str(e)}")
