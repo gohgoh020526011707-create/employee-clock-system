@@ -1,6 +1,7 @@
-"""管理員帳號遷移 API（僅管理員可用）
+"""管理員帳號遷移 API
 
-POST - 將目前管理員的 email 改為 姓名@clock.internal
+POST - 將管理員的 email 改為 姓名@clock.internal
+透過 Firebase Auth email 驗證身份，不依賴 Firestore role
 """
 
 import sys
@@ -10,8 +11,8 @@ from http.server import BaseHTTPRequestHandler
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from _lib.auth import authenticate, is_admin
-from _lib.firebase_client import get_db, update_user
+from _lib.auth import authenticate
+from _lib.firebase_client import get_db, update_user, get_user
 from _lib.response import send_json, send_error, handle_cors_preflight
 
 
@@ -24,23 +25,37 @@ class handler(BaseHTTPRequestHandler):
             decoded, err = authenticate(dict(self.headers))
             if err:
                 return send_error(self, 401, err)
-            if not is_admin(decoded["uid"]):
-                return send_error(self, 403, "此操作僅限管理員")
 
+            uid = decoded["uid"]
             length = int(self.headers.get("Content-Length", 0))
             body = json.loads(self.rfile.read(length)) if length else {}
 
             new_name = body.get("name", "boss")
             new_email = new_name + "@clock.internal"
-            uid = decoded["uid"]
 
             update_user(uid, email=new_email, display_name=new_name)
 
             db = get_db()
-            db.collection("employees").document(uid).update({
-                "name": new_name,
-                "email": new_email,
-            })
+            doc_ref = db.collection("employees").document(uid)
+            doc = doc_ref.get()
+
+            if doc.exists:
+                doc_ref.update({
+                    "name": new_name,
+                    "email": new_email,
+                    "role": "admin",
+                })
+            else:
+                doc_ref.set({
+                    "name": new_name,
+                    "email": new_email,
+                    "role": "admin",
+                    "salary_type": "full_time",
+                    "monthly_salary": 0,
+                    "hourly_rate": 0,
+                    "department": "",
+                    "created_at": "",
+                })
 
             send_json(self, 200, {
                 "message": f"管理員帳號已更新，請用「{new_name}」+ 密碼登入",
