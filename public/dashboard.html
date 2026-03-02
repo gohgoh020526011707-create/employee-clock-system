@@ -13,6 +13,7 @@
     <div class="navbar__user">
       <span id="user-name"></span>
       <a href="/admin.html" id="admin-link" class="btn btn--sm btn--outline" style="display:none;">管理後台</a>
+      <button class="btn btn--sm btn--outline" onclick="document.getElementById('pw-modal').style.display='flex'">修改密碼</button>
       <button class="btn btn--sm btn--outline" onclick="Auth.logout()">登出</button>
     </div>
   </nav>
@@ -98,6 +99,30 @@
     </div>
   </div>
 
+  <!-- 修改密碼彈窗 -->
+  <div id="pw-modal" class="modal" style="display:none;">
+    <div class="modal__overlay" onclick="document.getElementById('pw-modal').style.display='none'"></div>
+    <div class="modal__content card">
+      <h2 class="card__title">修改密碼</h2>
+      <div class="form-group">
+        <label for="pw-current">目前密碼</label>
+        <input type="password" id="pw-current" class="form-control" placeholder="請輸入目前密碼" />
+      </div>
+      <div class="form-group">
+        <label for="pw-new">新密碼</label>
+        <input type="password" id="pw-new" class="form-control" placeholder="至少 6 個字元" minlength="6" />
+      </div>
+      <div class="form-group">
+        <label for="pw-confirm">確認新密碼</label>
+        <input type="password" id="pw-confirm" class="form-control" placeholder="再次輸入新密碼" />
+      </div>
+      <div class="btn-group" style="margin-top:1rem;">
+        <button class="btn btn--primary" onclick="changePassword()">確認修改</button>
+        <button class="btn btn--outline" onclick="document.getElementById('pw-modal').style.display='none'">取消</button>
+      </div>
+    </div>
+  </div>
+
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
   <script src="/js/config.js"></script>
@@ -118,6 +143,43 @@
 
     updateClock();
     setInterval(updateClock, 1000);
+
+    async function changePassword() {
+      const current = document.getElementById("pw-current").value;
+      const newPw = document.getElementById("pw-new").value;
+      const confirm = document.getElementById("pw-confirm").value;
+
+      if (!current || !newPw || !confirm) {
+        Utils.showToast("請填寫所有欄位", "error");
+        return;
+      }
+      if (newPw.length < 6) {
+        Utils.showToast("新密碼至少需要 6 個字元", "error");
+        return;
+      }
+      if (newPw !== confirm) {
+        Utils.showToast("兩次輸入的新密碼不一致", "error");
+        return;
+      }
+
+      try {
+        const user = firebaseAuth.currentUser;
+        const credential = firebase.auth.EmailAuthProvider.credential(user.email, current);
+        await user.reauthenticateWithCredential(credential);
+        await user.updatePassword(newPw);
+        Utils.showToast("密碼修改成功", "success");
+        document.getElementById("pw-modal").style.display = "none";
+        document.getElementById("pw-current").value = "";
+        document.getElementById("pw-new").value = "";
+        document.getElementById("pw-confirm").value = "";
+      } catch (err) {
+        if (err.code === "auth/wrong-password" || err.code === "auth/invalid-credential") {
+          Utils.showToast("目前密碼不正確", "error");
+        } else {
+          Utils.showToast("修改失敗：" + err.message, "error");
+        }
+      }
+    }
 
     const defaultStart = new Date();
     defaultStart.setDate(defaultStart.getDate() - 7);
