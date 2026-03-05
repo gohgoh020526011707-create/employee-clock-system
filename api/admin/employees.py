@@ -121,7 +121,7 @@ class handler(BaseHTTPRequestHandler):
                 return send_error(self, 404, "找不到此員工")
 
             update_data = {}
-            for field in ["name", "department", "salary_type", "monthly_salary", "hourly_rate"]:
+            for field in ["name", "department", "salary_type", "monthly_salary", "hourly_rate", "salary_effective_date"]:
                 if field in body:
                     update_data[field] = body[field]
 

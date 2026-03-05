@@ -24,10 +24,16 @@ const Admin = (() => {
   }
 
   function salaryDisplay(emp) {
+    let text;
     if (emp.salary_type === "part_time") {
-      return `$${Number(emp.hourly_rate || 0).toLocaleString()} / 時`;
+      text = `$${Number(emp.hourly_rate || 0).toLocaleString()} / 時`;
+    } else {
+      text = `$${Number(emp.monthly_salary || 0).toLocaleString()} / 月`;
     }
-    return `$${Number(emp.monthly_salary || 0).toLocaleString()} / 月`;
+    if (emp.salary_effective_date) {
+      text += `<br><small style="color:var(--color-gray-400);">${emp.salary_effective_date} 起</small>`;
+    }
+    return text;
   }
 
   function renderEmployeeTable(tbody, employees) {
@@ -107,6 +113,7 @@ const Admin = (() => {
     document.getElementById("salary-type").value = emp.salary_type || "full_time";
     document.getElementById("salary-monthly").value = emp.monthly_salary || 0;
     document.getElementById("salary-hourly").value = emp.hourly_rate || 0;
+    document.getElementById("salary-effective-date").value = Utils.todayString();
     toggleSalaryEditFields();
   }
 
@@ -123,12 +130,19 @@ const Admin = (() => {
       return;
     }
 
+    const effectiveDate = document.getElementById("salary-effective-date").value;
+    if (!effectiveDate) {
+      Utils.showToast("請選擇生效日期", "error");
+      return;
+    }
+
     const salaryType = document.getElementById("salary-type").value;
     const body = {
       uid,
       salary_type: salaryType,
       monthly_salary: salaryType === "full_time" ? Number(document.getElementById("salary-monthly").value) || 0 : 0,
       hourly_rate: salaryType === "part_time" ? Number(document.getElementById("salary-hourly").value) || 0 : 0,
+      salary_effective_date: effectiveDate,
     };
 
     try {
