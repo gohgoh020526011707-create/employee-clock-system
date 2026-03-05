@@ -273,10 +273,10 @@
 
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
-  <script src="/js/config.js"></script>
-  <script src="/js/utils.js"></script>
-  <script src="/js/auth.js"></script>
-  <script src="/js/admin.js"></script>
+  <script src="/js/config.js?v=2"></script>
+  <script src="/js/utils.js?v=2"></script>
+  <script src="/js/auth.js?v=2"></script>
+  <script src="/js/admin.js?v=2"></script>
   <script>
     /* Tab 切換 */
     document.getElementById("admin-tabs").addEventListener("click", (e) => {
@@ -311,10 +311,11 @@
       document.getElementById("user-name").textContent = user.displayName || user.email;
 
       try {
-        await Promise.all([Admin.loadEmployees(), Admin.loadIPSettings(), Admin.loadHolidays()]);
+        const tasks = [Admin.loadEmployees(), Admin.loadIPSettings()];
+        if (typeof Admin.loadHolidays === "function") tasks.push(Admin.loadHolidays());
+        await Promise.all(tasks);
       } catch (err) {
-        Utils.showToast("權限不足或載入失敗", "error");
-        setTimeout(() => (window.location.href = "/dashboard.html"), 1500);
+        Utils.showToast("載入失敗：" + (err.message || "未知錯誤"), "error");
       }
     });
   </script>
