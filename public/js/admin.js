@@ -6,6 +6,10 @@ const Admin = (() => {
 
   /* ========== 員工管理 ========== */
 
+  function _nonAdminEmployees() {
+    return _employees.filter((e) => e.role !== "admin");
+  }
+
   async function loadEmployees() {
     const tbody = document.getElementById("employees-tbody");
     if (!tbody) return;
@@ -13,9 +17,9 @@ const Admin = (() => {
     try {
       const data = await Utils.apiRequest("/admin/employees");
       _employees = data.employees;
-      renderEmployeeTable(tbody, _employees);
+      renderEmployeeTable(tbody, _nonAdminEmployees());
     } catch (err) {
-      tbody.innerHTML = `<tr><td colspan="7" class="text-center">載入失敗：${err.message}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="4" class="text-center">載入失敗：${err.message}</td></tr>`;
     }
   }
 
@@ -321,8 +325,9 @@ const Admin = (() => {
 
     try {
       const rows = [];
+      const staff = _nonAdminEmployees();
 
-      for (const emp of _employees) {
+      for (const emp of staff) {
         let url = `/get_records?employee_id=${emp.uid}&start=${startDate}&end=${endDate}`;
         const data = await Utils.apiRequest(url);
         const records = data.records;
@@ -392,13 +397,14 @@ const Admin = (() => {
     try {
       const data = await Utils.apiRequest("/admin/employees");
       _employees = data.employees;
+      const staff = _nonAdminEmployees();
 
       for (const id of selects) {
         const select = document.getElementById(id);
         if (!select) continue;
         select.innerHTML =
           '<option value="">-- 請選擇員工 --</option>' +
-          _employees.map((e) => `<option value="${e.uid}">${e.name}</option>`).join("");
+          staff.map((e) => `<option value="${e.uid}">${e.name}</option>`).join("");
       }
     } catch {
       for (const id of selects) {
