@@ -206,9 +206,11 @@
         Utils.apiRequest("/holidays"),
       ]);
 
-      if (holidaysResult.status === "fulfilled") {
-        Records.setHolidays(holidaysResult.value.dates || []);
-      }
+      try {
+        if (holidaysResult.status === "fulfilled" && typeof Records.setHolidays === "function") {
+          Records.setHolidays(holidaysResult.value.dates || []);
+        }
+      } catch (_) {}
 
       const profile = profileResult.status === "fulfilled" ? profileResult.value : null;
 
@@ -220,22 +222,32 @@
 
         Records.setProfile(profile);
 
-        const salaryCard = document.getElementById("salary-info");
-        const typeEl = document.getElementById("my-salary-type");
-        const salaryEl = document.getElementById("my-salary");
+        try {
+          const salaryCard = document.getElementById("salary-info");
+          const typeEl = document.getElementById("my-salary-type");
+          const salaryEl = document.getElementById("my-salary");
 
-        typeEl.textContent = profile.salary_type === "part_time" ? "工讀生（時薪）" : "正職（月薪）";
-        if (profile.salary_type === "part_time") {
-          salaryEl.textContent = "$" + Number(profile.hourly_rate || 0).toLocaleString() + " / 時";
-        } else {
-          salaryEl.textContent = "$" + Number(profile.monthly_salary || 0).toLocaleString() + " / 月";
-        }
-        salaryCard.style.display = "";
+          typeEl.textContent = profile.salary_type === "part_time" ? "工讀生（時薪）" : "正職（月薪）";
+          if (profile.salary_type === "part_time") {
+            salaryEl.textContent = "$" + Number(profile.hourly_rate || 0).toLocaleString() + " / 時";
+          } else {
+            salaryEl.textContent = "$" + Number(profile.monthly_salary || 0).toLocaleString() + " / 月";
+          }
+          salaryCard.style.display = "";
+        } catch (_) {}
       }
 
-      if (recordsResult.status === "fulfilled") {
-        Records.renderToday(recordsResult.value.records);
-      } else {
+      try {
+        if (recordsResult.status === "fulfilled") {
+          if (typeof Records.renderToday === "function") {
+            Records.renderToday(recordsResult.value.records);
+          } else {
+            await Records.loadToday();
+          }
+        } else {
+          await Records.loadToday();
+        }
+      } catch (_) {
         const container = document.getElementById("today-record");
         if (container) container.innerHTML = '<p class="text-muted">載入失敗</p>';
       }
