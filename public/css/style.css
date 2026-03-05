@@ -636,6 +636,36 @@ code {
     padding: 0.5rem 0.375rem;
   }
 
+  /* 表格第一欄固定（手機橫滑時姓名不動） */
+  .table-wrapper table thead th:first-child,
+  .table-wrapper table tbody td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: #fff;
+    min-width: 60px;
+  }
+
+  .table-wrapper table thead th:first-child {
+    background: var(--color-gray-50);
+    z-index: 3;
+  }
+
+  .table-wrapper table tbody tr:hover td:first-child {
+    background: var(--color-gray-50);
+  }
+
+  .table-wrapper table thead th:first-child::after,
+  .table-wrapper table tbody td:first-child::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: -4px;
+    bottom: 0;
+    width: 4px;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.06);
+  }
+
   /* Tabs */
   .tabs {
     overflow-x: auto;
