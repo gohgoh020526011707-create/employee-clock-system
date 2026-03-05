@@ -200,10 +200,6 @@ const Records = (() => {
       summaryEl.innerHTML = `
         <div class="status-grid" style="margin-top:1rem;padding:1rem;background:var(--color-gray-50);border-radius:0.5rem;">
           <div class="status-item">
-            <span class="status-label">出勤天數</span>
-            <span class="status-value" style="font-size:1.25rem;font-weight:700;">${records.length} 天</span>
-          </div>
-          <div class="status-item">
             <span class="status-label">總工作時長</span>
             <span class="status-value" style="font-size:1.25rem;font-weight:700;">${durationText}</span>
           </div>
