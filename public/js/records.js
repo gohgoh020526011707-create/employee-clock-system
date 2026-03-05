@@ -34,6 +34,12 @@ const Records = (() => {
     return `$${pay.toLocaleString()}`;
   }
 
+  function renderToday(records) {
+    const container = document.getElementById("today-record");
+    if (!container) return;
+    renderTodayStatus(container, records);
+  }
+
   async function loadToday() {
     const container = document.getElementById("today-record");
     if (!container) return;
@@ -162,5 +168,5 @@ const Records = (() => {
       .join("");
   }
 
-  return { setProfile, loadToday, loadHistory };
+  return { setProfile, renderToday, loadToday, loadHistory };
 })();

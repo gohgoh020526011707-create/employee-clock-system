@@ -12,14 +12,26 @@ const Admin = (() => {
 
   async function loadEmployees() {
     const tbody = document.getElementById("employees-tbody");
-    if (!tbody) return;
 
     try {
       const data = await Utils.apiRequest("/admin/employees");
       _employees = data.employees;
-      renderEmployeeTable(tbody, _nonAdminEmployees());
+      if (tbody) renderEmployeeTable(tbody, _nonAdminEmployees());
+      _populateSelects();
     } catch (err) {
-      tbody.innerHTML = `<tr><td colspan="4" class="text-center">載入失敗：${err.message}</td></tr>`;
+      if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="text-center">載入失敗：${err.message}</td></tr>`;
+    }
+  }
+
+  function _populateSelects() {
+    const selects = ["query-employee", "salary-employee"];
+    const staff = _nonAdminEmployees();
+    for (const id of selects) {
+      const select = document.getElementById(id);
+      if (!select) continue;
+      select.innerHTML =
+        '<option value="">-- 請選擇員工 --</option>' +
+        staff.map((e) => `<option value="${e.uid}">${e.name}</option>`).join("");
     }
   }
 
@@ -82,7 +94,6 @@ const Admin = (() => {
       Utils.showToast(data.message, "success");
       form.reset();
       await loadEmployees();
-      await populateAllSelects();
     } catch (err) {
       Utils.showToast(err.message, "error");
     }
@@ -95,7 +106,6 @@ const Admin = (() => {
       const data = await Utils.apiRequest(`/admin/employees?uid=${uid}`, "DELETE");
       Utils.showToast(data.message, "success");
       await loadEmployees();
-      await populateAllSelects();
     } catch (err) {
       Utils.showToast(err.message, "error");
     }
@@ -324,14 +334,16 @@ const Admin = (() => {
     tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">計算中...</td></tr>';
 
     try {
-      const rows = [];
       const staff = _nonAdminEmployees();
 
-      for (const emp of staff) {
-        let url = `/get_records?employee_id=${emp.uid}&start=${startDate}&end=${endDate}`;
-        const data = await Utils.apiRequest(url);
-        const records = data.records;
+      const results = await Promise.all(
+        staff.map((emp) =>
+          Utils.apiRequest(`/get_records?employee_id=${emp.uid}&start=${startDate}&end=${endDate}`)
+            .then((data) => ({ emp, records: data.records }))
+        )
+      );
 
+      const rows = results.map(({ emp, records }) => {
         let totalMs = 0;
         let daysWorked = 0;
 
@@ -356,15 +368,15 @@ const Admin = (() => {
           basis = `$${salary.toLocaleString()} / 月`;
         }
 
-        rows.push({
+        return {
           name: emp.name,
           type: salaryTypeLabel(emp.salary_type),
           days: daysWorked,
           hours: totalHours.toFixed(1),
           basis,
           salary,
-        });
-      }
+        };
+      });
 
       if (rows.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">無員工資料</td></tr>';
@@ -392,26 +404,8 @@ const Admin = (() => {
 
   /* ========== 下拉選單填充 ========== */
 
-  async function populateAllSelects() {
-    const selects = ["query-employee", "salary-employee"];
-    try {
-      const data = await Utils.apiRequest("/admin/employees");
-      _employees = data.employees;
-      const staff = _nonAdminEmployees();
-
-      for (const id of selects) {
-        const select = document.getElementById(id);
-        if (!select) continue;
-        select.innerHTML =
-          '<option value="">-- 請選擇員工 --</option>' +
-          staff.map((e) => `<option value="${e.uid}">${e.name}</option>`).join("");
-      }
-    } catch {
-      for (const id of selects) {
-        const select = document.getElementById(id);
-        if (select) select.innerHTML = '<option value="">載入失敗</option>';
-      }
-    }
+  function populateAllSelects() {
+    _populateSelects();
   }
 
   return {

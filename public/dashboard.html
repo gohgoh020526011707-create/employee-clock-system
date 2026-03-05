@@ -4,6 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>員工打卡系統 — 儀表板</title>
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin />
+  <link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin />
+  <link rel="dns-prefetch" href="https://www.gstatic.com" />
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
@@ -194,9 +198,15 @@
 
       document.getElementById("user-name").textContent = user.displayName || user.email;
 
-      try {
-        const profile = await Auth.getProfile();
+      const today = Utils.todayString();
+      const [profileResult, recordsResult] = await Promise.allSettled([
+        Auth.getProfile(),
+        Utils.apiRequest(`/get_records?start=${today}&end=${today}`),
+      ]);
 
+      const profile = profileResult.status === "fulfilled" ? profileResult.value : null;
+
+      if (profile) {
         if (profile.role === "admin") {
           window.location.href = "/admin.html";
           return;
@@ -215,9 +225,14 @@
           salaryEl.textContent = "$" + Number(profile.monthly_salary || 0).toLocaleString() + " / 月";
         }
         salaryCard.style.display = "";
-      } catch {}
+      }
 
-      await Records.loadToday();
+      if (recordsResult.status === "fulfilled") {
+        Records.renderToday(recordsResult.value.records);
+      } else {
+        const container = document.getElementById("today-record");
+        if (container) container.innerHTML = '<p class="text-muted">載入失敗</p>';
+      }
     });
   </script>
 </body>

@@ -4,6 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>員工打卡系統 — 管理後台</title>
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin />
+  <link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin />
+  <link rel="dns-prefetch" href="https://www.gstatic.com" />
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
@@ -278,9 +282,7 @@
       document.getElementById("user-name").textContent = user.displayName || user.email;
 
       try {
-        await Admin.loadEmployees();
-        await Admin.loadIPSettings();
-        await Admin.populateAllSelects();
+        await Promise.all([Admin.loadEmployees(), Admin.loadIPSettings()]);
       } catch (err) {
         Utils.showToast("權限不足或載入失敗", "error");
         setTimeout(() => (window.location.href = "/dashboard.html"), 1500);

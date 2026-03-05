@@ -6,10 +6,11 @@ import firebase_admin
 from firebase_admin import credentials, firestore, auth as fb_auth
 
 _initialized = False
+_db = None
 
 
 def _ensure_initialized():
-    global _initialized
+    global _initialized, _db
     if _initialized:
         return
 
@@ -20,12 +21,13 @@ def _ensure_initialized():
     cred_dict = json.loads(cred_json)
     cred = credentials.Certificate(cred_dict)
     firebase_admin.initialize_app(cred)
+    _db = firestore.client()
     _initialized = True
 
 
 def get_db():
     _ensure_initialized()
-    return firestore.client()
+    return _db
 
 
 def verify_id_token(token):

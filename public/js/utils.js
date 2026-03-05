@@ -2,11 +2,26 @@
  * 通用工具模組
  */
 const Utils = (() => {
-  async function apiRequest(endpoint, method = "GET", body = null) {
+  let _cachedToken = null;
+  let _tokenExpiry = 0;
+
+  async function _getToken() {
+    const now = Date.now();
+    if (_cachedToken && now < _tokenExpiry) return _cachedToken;
     const user = firebaseAuth.currentUser;
     if (!user) throw new Error("尚未登入");
+    _cachedToken = await user.getIdToken();
+    _tokenExpiry = now + 5 * 60 * 1000;
+    return _cachedToken;
+  }
 
-    const token = await user.getIdToken();
+  function clearTokenCache() {
+    _cachedToken = null;
+    _tokenExpiry = 0;
+  }
+
+  async function apiRequest(endpoint, method = "GET", body = null) {
+    const token = await _getToken();
     const options = {
       method,
       headers: {
@@ -80,5 +95,5 @@ const Utils = (() => {
     }
   }
 
-  return { apiRequest, formatDate, formatTime, formatDateTime, todayString, showToast, setLoading };
+  return { apiRequest, clearTokenCache, formatDate, formatTime, formatDateTime, todayString, showToast, setLoading };
 })();

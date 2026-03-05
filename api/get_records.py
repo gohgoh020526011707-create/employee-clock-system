@@ -53,9 +53,14 @@ class handler(BaseHTTPRequestHandler):
 
             records = []
             for doc in docs:
-                data = doc.to_dict()
-                data["id"] = doc.id
-                records.append(data)
+                d = doc.to_dict()
+                records.append({
+                    "id": doc.id,
+                    "date": d.get("date"),
+                    "clock_in": d.get("clock_in"),
+                    "clock_out": d.get("clock_out"),
+                    "employee_id": d.get("employee_id"),
+                })
 
             send_json(self, 200, {"records": records, "count": len(records)})
         except Exception as e:
