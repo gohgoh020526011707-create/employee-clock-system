@@ -36,7 +36,7 @@ const Admin = (() => {
   }
 
   function salaryTypeLabel(type) {
-    return type === "part_time" ? "工讀生（時薪）" : "正職（月薪）";
+    return type === "part_time" ? "工讀生" : "正職";
   }
 
   function salaryDisplay(emp) {
@@ -389,8 +389,8 @@ const Admin = (() => {
         <tr>
           <td>${r.name}</td>
           <td>${r.type}</td>
-          <td>${r.days} 天</td>
-          <td>${r.hours} 小時</td>
+          <td>${r.days}</td>
+          <td>${r.hours}</td>
           <td>${r.basis}</td>
           <td><strong>$${r.salary.toLocaleString()}</strong></td>
         </tr>
