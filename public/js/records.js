@@ -133,6 +133,7 @@ const Records = (() => {
   function renderHistoryTable(tbody, records) {
     const isPartTime = _profile && _profile.salary_type === "part_time";
     const cols = isPartTime ? 5 : 4;
+    const summaryEl = document.getElementById("history-summary");
 
     const thRow = document.querySelector("#history-tbody")?.closest("table")?.querySelector("thead tr");
     if (thRow) {
@@ -148,12 +149,16 @@ const Records = (() => {
     if (records.length === 0) {
       tbody.innerHTML =
         `<tr><td colspan="${cols}" class="text-center text-muted">無紀錄</td></tr>`;
+      if (summaryEl) summaryEl.style.display = "none";
       return;
     }
+
+    let totalHours = 0;
 
     tbody.innerHTML = records
       .map((r) => {
         const dur = calcDuration(r.clock_in, r.clock_out);
+        totalHours += dur.hours;
         const pay = isPartTime ? calcPay(dur.hours, _profile) : "";
         return `
       <tr>
@@ -166,6 +171,46 @@ const Records = (() => {
     `;
       })
       .join("");
+
+    if (summaryEl) {
+      const h = Math.floor(totalHours);
+      const m = Math.round((totalHours - h) * 60);
+      const durationText = `${h} 小時 ${m} 分鐘`;
+
+      let payHtml = "";
+      if (isPartTime) {
+        const rate = Number(_profile.hourly_rate) || 0;
+        const totalPay = Math.round(totalHours * rate);
+        payHtml = `
+          <div class="status-item">
+            <span class="status-label">總薪資</span>
+            <span class="status-value" style="color:var(--color-success);font-size:1.25rem;font-weight:700;">$${totalPay.toLocaleString()}</span>
+          </div>`;
+      } else {
+        const monthlySalary = Number((_profile && _profile.monthly_salary) || 0);
+        if (monthlySalary) {
+          payHtml = `
+            <div class="status-item">
+              <span class="status-label">月薪</span>
+              <span class="status-value" style="color:var(--color-success);font-size:1.25rem;font-weight:700;">$${monthlySalary.toLocaleString()}</span>
+            </div>`;
+        }
+      }
+
+      summaryEl.innerHTML = `
+        <div class="status-grid" style="margin-top:1rem;padding:1rem;background:var(--color-gray-50);border-radius:0.5rem;">
+          <div class="status-item">
+            <span class="status-label">出勤天數</span>
+            <span class="status-value" style="font-size:1.25rem;font-weight:700;">${records.length} 天</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">總工作時長</span>
+            <span class="status-value" style="font-size:1.25rem;font-weight:700;">${durationText}</span>
+          </div>
+          ${payHtml}
+        </div>`;
+      summaryEl.style.display = "";
+    }
   }
 
   return { setProfile, renderToday, loadToday, loadHistory };
