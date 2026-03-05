@@ -3,9 +3,18 @@
  */
 const Records = (() => {
   let _profile = null;
+  let _holidays = [];
 
   function setProfile(profile) {
     _profile = profile;
+  }
+
+  function setHolidays(dates) {
+    _holidays = dates || [];
+  }
+
+  function _isHoliday(dateStr) {
+    return _holidays.includes(dateStr);
   }
 
   async function _ensureProfile() {
@@ -27,11 +36,13 @@ const Records = (() => {
     return { text: `${hours} 小時 ${mins} 分鐘`, hours: ms / 3600000 };
   }
 
-  function calcPay(hours, profile) {
+  function calcPay(hours, profile, dateStr) {
     if (!profile || profile.salary_type !== "part_time" || !hours) return "";
     const rate = Number(profile.hourly_rate) || 0;
-    const pay = Math.round(hours * rate);
-    return `$${pay.toLocaleString()}`;
+    const multiplier = dateStr && _isHoliday(dateStr) ? 2 : 1;
+    const pay = Math.round(hours * rate * multiplier);
+    const label = multiplier === 2 ? `$${pay.toLocaleString()} (2x)` : `$${pay.toLocaleString()}`;
+    return label;
   }
 
   function renderToday(records) {
@@ -90,7 +101,8 @@ const Records = (() => {
         </div>`;
     }).join("");
 
-    const totalPay = calcPay(totalPayHours, _profile);
+    const todayStr = Utils.todayString();
+    const totalPay = calcPay(totalPayHours, _profile, todayStr);
     const payHtml = totalPay ? `
       <div class="status-item" style="margin-top:0.5rem;">
         <span class="status-label">今日薪資合計</span>
@@ -155,14 +167,22 @@ const Records = (() => {
 
     let totalHours = 0;
 
+    let totalPay = 0;
+
     tbody.innerHTML = records
       .map((r) => {
         const dur = calcDuration(r.clock_in, r.clock_out);
         totalHours += dur.hours;
-        const pay = isPartTime ? calcPay(dur.hours, _profile) : "";
+        const holiday = _isHoliday(r.date);
+        const multiplier = holiday ? 2 : 1;
+        const pay = isPartTime ? calcPay(dur.hours, _profile, r.date) : "";
+        if (isPartTime && dur.hours) {
+          totalPay += dur.hours * (Number(_profile.hourly_rate) || 0) * multiplier;
+        }
+        const dateLabel = holiday ? `${r.date} <span style="color:#e74c3c;font-size:0.75rem;">假日</span>` : r.date;
         return `
-      <tr>
-        <td>${r.date}</td>
+      <tr${holiday ? ' style="background:rgba(231,76,60,0.05);"' : ""}>
+        <td>${dateLabel}</td>
         <td>${Utils.formatTime(r.clock_in)}</td>
         <td>${Utils.formatTime(r.clock_out)}</td>
         <td>${dur.text}</td>
@@ -179,12 +199,10 @@ const Records = (() => {
 
       let payHtml = "";
       if (isPartTime) {
-        const rate = Number(_profile.hourly_rate) || 0;
-        const totalPay = Math.round(totalHours * rate);
         payHtml = `
           <div class="status-item">
             <span class="status-label">總薪資</span>
-            <span class="status-value" style="color:var(--color-success);font-size:1.25rem;font-weight:700;">$${totalPay.toLocaleString()}</span>
+            <span class="status-value" style="color:var(--color-success);font-size:1.25rem;font-weight:700;">$${Math.round(totalPay).toLocaleString()}</span>
           </div>`;
       } else {
         const monthlySalary = Number((_profile && _profile.monthly_salary) || 0);
@@ -209,5 +227,5 @@ const Records = (() => {
     }
   }
 
-  return { setProfile, renderToday, loadToday, loadHistory };
+  return { setProfile, setHolidays, renderToday, loadToday, loadHistory };
 })();

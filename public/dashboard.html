@@ -200,10 +200,15 @@
       document.getElementById("user-name").textContent = user.displayName || user.email;
 
       const today = Utils.todayString();
-      const [profileResult, recordsResult] = await Promise.allSettled([
+      const [profileResult, recordsResult, holidaysResult] = await Promise.allSettled([
         Auth.getProfile(),
         Utils.apiRequest(`/get_records?start=${today}&end=${today}`),
+        Utils.apiRequest("/holidays"),
       ]);
+
+      if (holidaysResult.status === "fulfilled") {
+        Records.setHolidays(holidaysResult.value.dates || []);
+      }
 
       const profile = profileResult.status === "fulfilled" ? profileResult.value : null;
 

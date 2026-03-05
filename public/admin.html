@@ -27,6 +27,7 @@
       <button class="tab" data-tab="salary">薪資設定</button>
       <button class="tab" data-tab="records">出勤查詢</button>
       <button class="tab" data-tab="payroll">薪資報表</button>
+      <button class="tab" data-tab="holidays">國定假日</button>
       <!-- <button class="tab" data-tab="ip-settings">IP 白名單</button> -->
     </div>
 
@@ -185,14 +186,42 @@
                 <th>薪資類型</th>
                 <th>出勤天數</th>
                 <th>總工作時數</th>
+                <th>假日時數(2x)</th>
                 <th>薪資基準</th>
                 <th>應發薪資</th>
               </tr>
             </thead>
             <tbody id="payroll-tbody">
-              <tr><td colspan="6" class="text-center text-muted">請選擇月份後產生報表</td></tr>
+              <tr><td colspan="7" class="text-center text-muted">請選擇月份後產生報表</td></tr>
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: 國定假日 -->
+    <div id="panel-holidays" class="tab-panel">
+      <div class="card">
+        <h2 class="card__title">國定假日管理</h2>
+        <p style="margin-bottom:1rem; color:var(--color-gray-500); font-size:0.875rem;">
+          國定假日上班的員工將以雙倍薪資計算。
+        </p>
+        <div style="display:flex; gap:0.75rem; align-items:flex-end; flex-wrap:wrap;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label for="holiday-date">選擇日期</label>
+            <input type="date" id="holiday-date" class="form-control" />
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label for="holiday-name">假日名稱（選填）</label>
+            <input type="text" id="holiday-name" class="form-control" placeholder="例如：元旦" />
+          </div>
+          <button class="btn btn--primary" onclick="Admin.addHoliday()">新增假日</button>
+        </div>
+        <div style="margin-top:1.5rem;">
+          <h3 style="font-size:0.9375rem; font-weight:600; color:var(--color-gray-700); margin-bottom:0.75rem;">已設定的假日</h3>
+          <div id="holidays-list">
+            <p class="text-muted">載入中...</p>
+          </div>
         </div>
       </div>
     </div>
@@ -282,7 +311,7 @@
       document.getElementById("user-name").textContent = user.displayName || user.email;
 
       try {
-        await Promise.all([Admin.loadEmployees(), Admin.loadIPSettings()]);
+        await Promise.all([Admin.loadEmployees(), Admin.loadIPSettings(), Admin.loadHolidays()]);
       } catch (err) {
         Utils.showToast("權限不足或載入失敗", "error");
         setTimeout(() => (window.location.href = "/dashboard.html"), 1500);

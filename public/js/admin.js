@@ -3,6 +3,8 @@
  */
 const Admin = (() => {
   let _employees = [];
+  let _holidays = [];
+  let _holidayNames = {};
 
   /* ========== 員工管理 ========== */
 
@@ -216,6 +218,87 @@ const Admin = (() => {
     }
   }
 
+  /* ========== 國定假日管理 ========== */
+
+  async function loadHolidays() {
+    const container = document.getElementById("holidays-list");
+    if (!container) return;
+
+    try {
+      const data = await Utils.apiRequest("/admin/holidays");
+      _holidays = data.dates || [];
+      _holidayNames = data.names || {};
+      renderHolidaysList(container);
+    } catch (err) {
+      if (container) container.innerHTML = `<p class="text-muted">載入失敗：${err.message}</p>`;
+    }
+  }
+
+  function renderHolidaysList(container) {
+    if (_holidays.length === 0) {
+      container.innerHTML = '<p class="text-muted">尚未設定任何國定假日</p>';
+      return;
+    }
+
+    const sorted = [..._holidays].sort();
+    container.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:0.5rem;">
+      ${sorted.map((d) => {
+        const label = _holidayNames[d] ? `${d}（${_holidayNames[d]}）` : d;
+        return `<span style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.375rem 0.75rem;background:var(--color-gray-100);border-radius:0.375rem;font-size:0.875rem;">
+          <span style="color:#e74c3c;">&#9679;</span> ${label}
+          <button onclick="Admin.removeHoliday('${d}')" style="border:none;background:none;cursor:pointer;color:var(--color-gray-400);font-size:1rem;line-height:1;padding:0 0.125rem;">&times;</button>
+        </span>`;
+      }).join("")}
+    </div>`;
+  }
+
+  async function addHoliday() {
+    const dateInput = document.getElementById("holiday-date");
+    const nameInput = document.getElementById("holiday-name");
+    const dateVal = dateInput?.value;
+    if (!dateVal) {
+      Utils.showToast("請選擇日期", "error");
+      return;
+    }
+
+    const nameVal = nameInput?.value?.trim() || "";
+    const newDates = [...new Set([..._holidays, dateVal])].sort();
+    const newNames = { ..._holidayNames };
+    if (nameVal) newNames[dateVal] = nameVal;
+
+    try {
+      await Utils.apiRequest("/admin/holidays", "POST", { dates: newDates, names: newNames });
+      Utils.showToast("假日已新增", "success");
+      if (dateInput) dateInput.value = "";
+      if (nameInput) nameInput.value = "";
+      _holidays = newDates;
+      _holidayNames = newNames;
+      renderHolidaysList(document.getElementById("holidays-list"));
+    } catch (err) {
+      Utils.showToast(err.message, "error");
+    }
+  }
+
+  async function removeHoliday(date) {
+    const newDates = _holidays.filter((d) => d !== date);
+    const newNames = { ..._holidayNames };
+    delete newNames[date];
+
+    try {
+      await Utils.apiRequest("/admin/holidays", "POST", { dates: newDates, names: newNames });
+      Utils.showToast("假日已移除", "success");
+      _holidays = newDates;
+      _holidayNames = newNames;
+      renderHolidaysList(document.getElementById("holidays-list"));
+    } catch (err) {
+      Utils.showToast(err.message, "error");
+    }
+  }
+
+  function isHoliday(dateStr) {
+    return _holidays.includes(dateStr);
+  }
+
   /* ========== 出勤紀錄查詢與修改 ========== */
 
   function calcDuration(clockIn, clockOut) {
@@ -331,7 +414,7 @@ const Admin = (() => {
     const lastDay = new Date(year, month, 0).getDate();
     const endDate = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
 
-    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">計算中...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">計算中...</td></tr>';
 
     try {
       const staff = _nonAdminEmployees();
@@ -346,22 +429,28 @@ const Admin = (() => {
       const rows = results.map(({ emp, records }) => {
         let totalMs = 0;
         let daysWorked = 0;
+        let holidayMs = 0;
 
         for (const r of records) {
           if (r.clock_in && r.clock_out) {
             const ms = new Date(r.clock_out) - new Date(r.clock_in);
-            if (ms > 0) totalMs += ms;
+            if (ms > 0) {
+              totalMs += ms;
+              if (isHoliday(r.date)) holidayMs += ms;
+            }
           }
           daysWorked++;
         }
 
         const totalHours = totalMs / 3600000;
+        const holidayHours = holidayMs / 3600000;
         let salary = 0;
         let basis = "";
 
         if (emp.salary_type === "part_time") {
           const rate = Number(emp.hourly_rate) || 0;
-          salary = Math.round(totalHours * rate);
+          const normalHours = totalHours - holidayHours;
+          salary = Math.round(normalHours * rate + holidayHours * rate * 2);
           basis = `$${rate.toLocaleString()} / 時`;
         } else {
           salary = Number(emp.monthly_salary) || 0;
@@ -375,11 +464,12 @@ const Admin = (() => {
           hours: totalHours.toFixed(1),
           basis,
           salary,
+          holidayHours: holidayHours.toFixed(1),
         };
       });
 
       if (rows.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">無員工資料</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">無員工資料</td></tr>';
         return;
       }
 
@@ -391,6 +481,7 @@ const Admin = (() => {
           <td>${r.type}</td>
           <td>${r.days}</td>
           <td>${r.hours}</td>
+          <td>${Number(r.holidayHours) > 0 ? `<span style="color:#e74c3c;">${r.holidayHours}</span>` : "0"}</td>
           <td>${r.basis}</td>
           <td><strong>$${r.salary.toLocaleString()}</strong></td>
         </tr>
@@ -398,7 +489,7 @@ const Admin = (() => {
         )
         .join("");
     } catch (err) {
-      tbody.innerHTML = `<tr><td colspan="6" class="text-center">產生報表失敗：${err.message}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" class="text-center">產生報表失敗：${err.message}</td></tr>`;
     }
   }
 
@@ -418,6 +509,9 @@ const Admin = (() => {
     saveSalary,
     loadIPSettings,
     saveIPSettings,
+    loadHolidays,
+    addHoliday,
+    removeHoliday,
     queryEmployeeRecords,
     openEditModal,
     closeEditModal,
