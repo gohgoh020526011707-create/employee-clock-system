@@ -52,10 +52,21 @@
   <script src="/js/utils.js?v=2"></script>
   <script src="/js/auth.js?v=2"></script>
   <script>
-    Auth.onAuthStateChanged((user) => {
-      if (user) {
+    async function redirectByRole() {
+      try {
+        const profile = await Auth.getProfile();
+        if (profile && profile.role === "admin") {
+          window.location.href = "/admin.html";
+        } else {
+          window.location.href = "/dashboard.html";
+        }
+      } catch {
         window.location.href = "/dashboard.html";
       }
+    }
+
+    Auth.onAuthStateChanged((user) => {
+      if (user) redirectByRole();
     });
 
     document.getElementById("login-form").addEventListener("submit", async (e) => {
