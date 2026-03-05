@@ -4,6 +4,10 @@
 const Records = (() => {
   let _profile = null;
 
+  function setProfile(profile) {
+    _profile = profile;
+  }
+
   async function _ensureProfile() {
     if (_profile) return _profile;
     try {
@@ -158,5 +162,5 @@ const Records = (() => {
       .join("");
   }
 
-  return { loadToday, loadHistory };
+  return { setProfile, loadToday, loadHistory };
 })();

@@ -16,14 +16,10 @@ const Auth = (() => {
     firebaseAuth.onAuthStateChanged(callback);
   }
 
-  async function getCurrentRole() {
-    try {
-      const data = await Utils.apiRequest("/admin/employees", "GET");
-      return "admin";
-    } catch {
-      return "employee";
-    }
+  async function getProfile() {
+    const data = await Utils.apiRequest("/my_profile");
+    return data.profile;
   }
 
-  return { login, logout, onAuthStateChanged, getCurrentRole };
+  return { login, logout, onAuthStateChanged, getProfile };
 })();
