@@ -3,7 +3,7 @@
 查詢參數：
   - start: 開始日期 (YYYY-MM-DD)
   - end:   結束日期 (YYYY-MM-DD)
-  - employee_id: 員工 UID（僅管理員可用）
+  - employee_id: 員工 UID(僅管理員可用)
 """
 
 import sys

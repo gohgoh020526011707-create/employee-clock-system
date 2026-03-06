@@ -1,9 +1,9 @@
-"""員工管理 API（僅管理員可用）
+"""員工管理 API(僅管理員可用)
 
 GET  - 取得所有員工列表
 POST - 新增員工
 PUT  - 更新員工資料（薪資等）
-DELETE - 刪除員工（查詢參數 uid）
+DELETE - 刪除員工（查詢參數 uid)
 """
 
 import sys
